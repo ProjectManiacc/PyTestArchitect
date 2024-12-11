@@ -1,8 +1,12 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>org.jetbrains.plugins.template</id>
+    <id>com.pytestarchitect</id>
     <name>PyTestArchitect</name>
-    <vendor>JetBrains</vendor>
+    <vendor email="piotrkluziok@gmail.com">Piotr Kluziok</vendor>
+    <version>0.1.0</version>
+    <description><![CDATA[
+        PyTestArchitect is a plugin for PyCharm that helps you create and manage tests for your project.
+    ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
 
