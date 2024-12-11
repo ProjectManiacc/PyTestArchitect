@@ -8,6 +8,13 @@
         PyTestArchitect is a plugin for PyCharm that helps you create and manage tests for your project.
     ]]></description>
 
+    <actions>
+        <action id="com.pytestarchitect.GenerateTestAction"
+                class="com.pytestarchitect.GenerateTestAction"
+                text="Generate Test">
+        </action>
+    </actions>
+
     <depends>com.intellij.modules.platform</depends>
 
     <resource-bundle>messages.MyBundle</resource-bundle>
