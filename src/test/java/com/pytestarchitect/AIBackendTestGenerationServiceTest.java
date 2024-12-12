@@ -11,7 +11,7 @@ public class AIBackendTestGenerationServiceTest {
     public void testGeneratesTestsUsesAIClient(){
         AIClient mockClient = new AIClient() {
             @Override
-            public String generateTestsFromCode(String sourceCode) {
+            public String generateTests(String sourceCode) {
                 return "def test_generated_by_ai():\n    assert foo() == 42\n";
             }
 

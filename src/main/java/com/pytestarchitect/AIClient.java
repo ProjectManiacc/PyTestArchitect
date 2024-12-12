@@ -1,5 +1,5 @@
 package com.pytestarchitect;
 
 public interface AIClient {
-    String generateTestsFromCode(String sourceCode);
+    String generateTests(String sourceCode);
 }
