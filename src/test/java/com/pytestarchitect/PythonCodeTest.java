@@ -14,7 +14,7 @@ public class PythonCodeTest extends BasePlatformTestCase {
     public void testExtractPythonCode() {
         var pythonFile = myFixture.configureByText("test.py", "def test():\n    print('Hello, World!')");
         var action = ActionManager.getInstance().getAction("com.pytestarchitect.GenerateTestAction");
-        AnActionEvent event = new createTestEvent(dataId -> {
+        DataContext dataContext = dataId -> {
             if (CommonDataKeys.PROJECT.is(dataId)) {
                 return myFixture.getProject();
             }
@@ -22,7 +22,8 @@ public class PythonCodeTest extends BasePlatformTestCase {
                 return myFixture.getEditor();
             }
             return null;
-        });
+        };
+        AnActionEvent event = AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, dataContext);
 
         action.actionPerformed(event);
 
