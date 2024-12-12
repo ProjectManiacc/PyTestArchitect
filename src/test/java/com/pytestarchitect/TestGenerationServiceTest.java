@@ -9,7 +9,7 @@ public class TestGenerationServiceTest {
 
     @Test
     public void testGenerateTest() {
-        TestGenerationService service = new TestGenerationService();
+        TestGenerationService service = new DummyTestGenerationService();
         String code = "def foo():\n    return 42";
         String tests = service.generateTests(code);
 
