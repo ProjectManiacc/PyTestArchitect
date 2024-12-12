@@ -20,8 +20,13 @@ public class GenerateTestAction extends AnAction {
         if (psiFile.getVirtualFile() != null && "py".equalsIgnoreCase(psiFile.getVirtualFile().getExtension())) {
             var pythonCode = psiFile.getText();
             TestState.setLastExtractedCode(pythonCode);
+
+            TestGenerationService testGenerationService = new DummyTestGenerationService();
+            String generatedTests = testGenerationService.generateTests(pythonCode);
+            TestState.setLastGeneratedTests(generatedTests);
         } else {
             TestState.setLastExtractedCode(null);
+            TestState.setLastGeneratedTests(null);
         }
 
     }
