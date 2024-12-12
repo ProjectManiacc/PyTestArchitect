@@ -6,6 +6,12 @@ import org.jetbrains.annotations.NotNull;
 
 public class GenerateTestAction extends AnAction {
 
+    private static TestGenerationService testGenerationService = new DummyTestGenerationService();
+
+    public static void setTestGenerationService(TestGenerationService service) {
+        GenerateTestAction.testGenerationService = service;
+    }
+
     @Override
     public void actionPerformed(@NotNull AnActionEvent event) {
         var project = event.getProject();
@@ -21,7 +27,6 @@ public class GenerateTestAction extends AnAction {
             var pythonCode = psiFile.getText();
             TestState.setLastExtractedCode(pythonCode);
 
-            TestGenerationService testGenerationService = new DummyTestGenerationService();
             String generatedTests = testGenerationService.generateTests(pythonCode);
             TestState.setLastGeneratedTests(generatedTests);
         } else {
