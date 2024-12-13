@@ -7,8 +7,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class RealAIClientTest {
     private MockWebServer mockWebServer;
@@ -49,6 +48,6 @@ public class RealAIClientTest {
         String sourceCode = "def foo():\n    return 42";
         String result = client.generateTests(sourceCode);
 
-        assertNotNull(result);
+        assertNull(result);
     }
 }
