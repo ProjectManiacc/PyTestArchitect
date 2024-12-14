@@ -21,6 +21,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <StartupActivity implementation="com.pytestarchitect.PluginStartupActivity"/>
+        <codeInsight.lineMarkerProvider language="Python" implementationClass="com.pytestarchitect.PluginLineMarkerProvider"/>
     </extensions>
 
     <applicationListeners>
