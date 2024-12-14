@@ -23,7 +23,7 @@ public class AIBackendTestGenerationService implements TestGenerationService {
         } catch (Exception e) {
             logger.severe("Failed to generate tests: " + e.getMessage());
             e.printStackTrace();
-
+            return null;
         }
     }
 }

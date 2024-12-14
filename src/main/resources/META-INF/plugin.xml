@@ -20,6 +20,7 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
+        <StartupActivity implementation="com.pytestarchitect.PluginStartupActivity"/>
     </extensions>
 
     <applicationListeners>
