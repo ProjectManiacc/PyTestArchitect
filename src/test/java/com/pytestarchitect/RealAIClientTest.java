@@ -17,7 +17,7 @@ public class RealAIClientTest {
     public void setUp() throws Exception {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
-        client = new RealAIClient(mockWebServer.url("/").toString(), "FAKE_API_KEY");
+        client = new RealAIClient("FAKE_API_KEY");
     }
 
     @After
