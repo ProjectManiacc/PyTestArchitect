@@ -10,7 +10,7 @@ public class LineMarkerTest extends LightPlatformCodeInsightFixture4TestCase {
     }
 
     public void testLineMarker() {
-        myFixture.configureByFile("example.py");
+        myFixture.configureByFile("python_class_example.py");
         var infoList = myFixture.doHighlighting();
         boolean classMarkerFound = infoList.stream().anyMatch(info -> info.getGutterIconRenderer() != null && info.getGutterIconRenderer().getTooltipText().contains("Generate tests for class"));
         boolean functionMarkerFound = infoList.stream().anyMatch(info -> info.getGutterIconRenderer() != null && info.getGutterIconRenderer().getTooltipText().contains("Generate tests for function"));
