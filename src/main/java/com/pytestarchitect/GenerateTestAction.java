@@ -1,12 +1,19 @@
 package com.pytestarchitect;
 
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationType;
+import com.intellij.notification.Notifications;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import org.jetbrains.annotations.NotNull;
 
 public class GenerateTestAction extends AnAction {
 
-    private static TestGenerationService testGenerationService = new DummyTestGenerationService();
+    private static TestGenerationService testGenerationService;
+
+    static {
+          testGenerationService  = new DummyTestGenerationService();
+    }
 
     public static void setTestGenerationService(TestGenerationService service) {
         GenerateTestAction.testGenerationService = service;
@@ -29,6 +36,11 @@ public class GenerateTestAction extends AnAction {
 
             String generatedTests = testGenerationService.generateTests(pythonCode);
             TestState.setLastGeneratedTests(generatedTests);
+
+            Notifications.Bus.notify(
+                    new Notification("Test Generation", "Generated Tests", generatedTests, NotificationType.INFORMATION),
+                    project
+            );
         } else {
             TestState.setLastExtractedCode(null);
             TestState.setLastGeneratedTests(null);
