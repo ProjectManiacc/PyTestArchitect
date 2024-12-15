@@ -4,7 +4,7 @@ import java.util.logging.Logger;
 
 public class AIBackendTestGenerationService implements TestGenerationService {
     final AIClient client;
-    private static final Logger logger = Logger.getLogger(AIBackendTestGenerationService.class.getName());
+    static final Logger logger = Logger.getLogger(AIBackendTestGenerationService.class.getName());
 
     public AIBackendTestGenerationService(AIClient client) {
         this.client = client;

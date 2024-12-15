@@ -2,13 +2,18 @@ package com.pytestarchitect;
 
 import com.google.gson.Gson;
 import okhttp3.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.util.*;
 import java.io.IOException;
 import java.util.List;
 
+import static com.pytestarchitect.AIBackendTestGenerationService.logger;
+
 public class RealAIClient implements AIClient {
+    private static final Logger log = LoggerFactory.getLogger(RealAIClient.class);
     private final String apiKey;
     private final OkHttpClient httpClient;
     private final Gson gson = new Gson();
@@ -21,55 +26,58 @@ public class RealAIClient implements AIClient {
     }
 
 
-
     @Override
     public String generateTests(String sourceCode) {
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "gpt-4o");
-        requestBody.put("messages", Arrays.asList(
-                Collections.singletonMap("role", "system"),
-                Collections.singletonMap("role", "user")
-        ));
+        try {
+            List<Map<String, String>> messages = new ArrayList<>();
+            messages.add(Map.of(
+                "role", "system",
+                "content", "You are a tool that generates Python unit tests using pytest. Ensure tests cover all methods and edge cases."
+            ));
+            messages.add(Map.of(
+                    "role", "user",
+                    "content", "Generate pytest test cases for the following Python code:\n\n" + sourceCode
+            ));
 
-        List<Map<String, String>> messages = new ArrayList<>();
-        messages.add(new HashMap<String, String>() {{
-            put("role", "system");
-            put("content", "You are a tool that generates Python tests from given source code.");
-        }});
+            Map<String, Object> requestBody = Map.of(
+                    "temperature", 0.7,
+                    "messages", messages,
+                    "model", "gpt-4o"
+            );
+            String jsonRequest = gson.toJson(requestBody);
+            logger.info("Generated JSON Request: " + jsonRequest);
 
-        messages.add(new HashMap<String, String>() {{
-            put("role", "user");
-            put("content", "Generate tests for the following Python code:\n\n" + sourceCode);
-        }});
+            Request request = new Request.Builder()
+                    .url(API_URL)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .post(RequestBody.create(jsonRequest, MediaType.parse("application/json")))
+                    .build();
 
+            try (Response response = httpClient.newCall(request).execute()) {
 
-        requestBody.put("messages", messages);
-        requestBody.put("temperature", 0.7);
+                if (!response.isSuccessful()) {
 
-        String jsonRequest = gson.toJson(requestBody);
+                    logger.severe("AI API call failed with response code: " + response.code());
+                    return null;
+                }
 
-        Request request = new Request.Builder()
-                .url(API_URL)
-                .header("Authorization", "Bearer " + apiKey)
-                .header("Content-Type", "application/json")
-                .post(RequestBody.create(jsonRequest, MediaType.parse("application/json")))
-                .build();
+                String responseBody = response.body().string();
+                logger.info("API Response: " + responseBody);
 
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                return null;
+                ChatCompletionResponse completion = gson.fromJson(responseBody, ChatCompletionResponse.class);
+
+                if (completion.choices == null || completion.choices.isEmpty()) {
+                    logger.severe("AI API returned an empty choices list.");
+                    return null;
+                }
+                return completion.choices.get(0).message.content.trim();
             }
-            String responseBody = response.body().string();
-
-            ChatCompletionResponse completion = gson.fromJson(responseBody, ChatCompletionResponse.class);
-            if (completion.choices != null && !completion.choices.isEmpty()) {
-                return completion.choices.get(0).message.content;
-            }
-            return null;
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
+
     }
 
     static class ChatCompletionResponse {
@@ -84,7 +92,6 @@ public class RealAIClient implements AIClient {
         String role;
         String content;
     }
-
 
 
 }
