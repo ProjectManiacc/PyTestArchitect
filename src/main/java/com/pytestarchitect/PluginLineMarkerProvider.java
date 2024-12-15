@@ -19,9 +19,11 @@ public class PluginLineMarkerProvider implements LineMarkerProvider{
     @Nullable
     public LineMarkerInfo<?> getLineMarkerInfo(@NotNull PsiElement element) {
         if (element instanceof PyClass) {
+            System.out.println("Found class: " + ((PyClass) element).getName());
             return createMarker(element, "Generate tests for class");
         }
         else if (element instanceof PyFunction) {
+            System.out.println("Found function: " + ((PyFunction) element).getName());
             return createMarker(element, "Generate tests for function");
         }
         return null;
