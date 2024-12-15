@@ -6,6 +6,7 @@ import com.intellij.notification.Notifications;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import org.jetbrains.annotations.NotNull;
+import com.intellij.psi.*;
 
 public class GenerateTestAction extends AnAction {
 
@@ -45,6 +46,25 @@ public class GenerateTestAction extends AnAction {
             TestState.setLastExtractedCode(null);
             TestState.setLastGeneratedTests(null);
         }
-
     }
+    public static void triggerForElement(PsiElement element) {
+        String code = extractCodeForElement(element);
+        if (code == null || code.isEmpty()) {
+            TestState.setLastGeneratedTests("No code found for this element.");
+            return;
+        }
+
+        String testCode = testGenerationService.generateTests(code);
+        TestState.setLastGeneratedTests(testCode);
+
+        // Optionally show a notification or insert a file with tests
+        Notification notification = new Notification("Test Generation", "Generated Tests", testCode, NotificationType.INFORMATION);
+        Notifications.Bus.notify(notification);
+    }
+
+    private static String extractCodeForElement(PsiElement element) {
+        return element.getText();
+    }
+
+
 }

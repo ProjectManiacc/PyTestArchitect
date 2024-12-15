@@ -11,17 +11,20 @@
     <actions>
         <action id="com.pytestarchitect.GenerateTestAction"
                 class="com.pytestarchitect.GenerateTestAction"
-                text="Generate Test">
+                text="Generate Test"
+                icon="/icons/magicResolveDark.svg">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
     </actions>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.python</depends>
 
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
         <StartupActivity implementation="com.pytestarchitect.PluginStartupActivity"/>
-        <codeInsight.lineMarkerProvider language="Python" implementationClass="com.pytestarchitect.PluginLineMarkerProvider"/>
+        <lineMarkerProvider language="Python" implementationClass="com.pytestarchitect.PluginLineMarkerProvider"/>
     </extensions>
 
     <applicationListeners>
