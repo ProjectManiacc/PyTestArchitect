@@ -20,6 +20,10 @@ public class GenerateTestAction extends AnAction {
         GenerateTestAction.testGenerationService = service;
     }
 
+    public static TestGenerationService getTestGenerationService() {
+        return GenerateTestAction.testGenerationService;
+    }
+
     @Override
     public void actionPerformed(@NotNull AnActionEvent event) {
         var project = event.getProject();
@@ -38,10 +42,18 @@ public class GenerateTestAction extends AnAction {
             String generatedTests = testGenerationService.generateTests(pythonCode);
             TestState.setLastGeneratedTests(generatedTests);
 
-            Notifications.Bus.notify(
-                    new Notification("Test Generation", "Generated Tests", generatedTests, NotificationType.INFORMATION),
-                    project
-            );
+            if (generatedTests == null || generatedTests.isEmpty()) {
+                Notifications.Bus.notify(
+                        new Notification(
+                                "Test Generation",
+                                "Test Generation Failed",
+                                "Failed to generate tests for the provided code. Please check the logs for details.",
+                                NotificationType.WARNING
+                        ),
+                        project
+                );
+            }
+
         } else {
             TestState.setLastExtractedCode(null);
             TestState.setLastGeneratedTests(null);
