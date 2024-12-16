@@ -6,15 +6,23 @@ import com.intellij.notification.Notifications;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.application.WriteAction;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VfsUtil;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.*;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.jetbrains.python.psi.PyClass;
 import com.jetbrains.python.psi.PyFunction;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 public class GenerateTestAction extends AnAction {
 
+    private static final Logger log = LoggerFactory.getLogger(GenerateTestAction.class);
     private static TestGenerationService testGenerationService;
 
     static {
@@ -40,76 +48,74 @@ public class GenerateTestAction extends AnAction {
         var psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.getDocument());
         if (psiFile == null) return;
 
-        if (psiFile.getVirtualFile() != null && "py".equalsIgnoreCase(psiFile.getVirtualFile().getExtension())) {
-            int caretOffset = editor.getCaretModel().getOffset();
-            PsiElement elementAtCaret = psiFile.findElementAt(caretOffset);
+        int offset = editor.getCaretModel().getOffset();
+        PsiElement element = psiFile.findElementAt(offset);
+        if (element == null) {
+            log.warn("No element found at offset {}", offset);
+            return;
+        }
 
-            PsiElement targetElement = PsiTreeUtil.getParentOfType(elementAtCaret, PyClass.class, PyFunction.class);
+        PyClass pyClass = PsiTreeUtil.getParentOfType(element, PyClass.class);
+        PyFunction pyFunction = PsiTreeUtil.getParentOfType(element, PyFunction.class);
 
-            if (targetElement == null) {
-                Notifications.Bus.notify(
-                        new Notification(
-                                "Test Generation",
-                                "Test Generation Failed",
-                                "No valid class or function found at the caret position. Please click on a class or function to generate tests.",
-                                NotificationType.WARNING
-                        ),
-                        project
-                );
+        String name;
+        if (pyClass != null) {
+            name = pyClass.getName();
+        } else if (pyFunction != null) {
+            name = pyFunction.getName();
+        } else {
+            log.warn("No valid class or function found at offset {}", offset);
+            return;
+        }
+
+        PsiElement targetElement = pyClass != null ? pyClass : pyFunction;
+        String sourceCode = extractCodeForElement(targetElement);
+
+        String testCode = testGenerationService.generateTests(sourceCode);
+        if (testCode == null || testCode.isEmpty()) {
+            log.warn("No tests generated for {}", name);
+            log.warn("Source code: {}", sourceCode);
+            return;
+        }
+        try {
+            VirtualFile baseDir = project.getBaseDir();
+            if (baseDir == null) {
+                log.warn("Project base directory not found: {}", project.getName());
                 return;
             }
 
-            String sourceCode = extractCodeForElement(targetElement);
+            VirtualFile testsDir = WriteAction.compute(() -> {
+                VirtualFile dir = baseDir.findChild("tests");
+                if (dir == null) {
+                    dir = baseDir.createChildDirectory(this, "tests");
+                }
+                return dir;
+            });
 
-            if (sourceCode == null || sourceCode.isEmpty()) {
-                Notifications.Bus.notify(
-                        new Notification(
-                                "Test Generation",
-                                "Test Generation Failed",
-                                "Failed to extract code for the selected element.",
-                                NotificationType.WARNING
-                        ),
-                        project
-                );
-                return;
-            }
+            String fileName = "test_" + name.toLowerCase() + ".py";
+            VirtualFile testFile = WriteAction.compute(() -> {
+                VirtualFile file = testsDir.findChild(fileName);
+                if (file == null) {
+                    file = testsDir.createChildData(this, fileName);
+                }
+                return file;
+            });
 
-            String generatedTests = testGenerationService.generateTests(sourceCode);
-
-            if (generatedTests == null || generatedTests.isEmpty()) {
-                Notifications.Bus.notify(
-                        new Notification(
-                                "Test Generation",
-                                "Test Generation Failed",
-                                "Failed to generate tests for the selected element. Please check the logs for details.",
-                                NotificationType.WARNING
-                        ),
-                        project
-                );
-                return;
-            }
+            WriteAction.run(() -> VfsUtil.saveText(testFile, testCode));
 
             Notifications.Bus.notify(
                     new Notification(
                             "Test Generation",
-                            "Generated Tests",
-                            generatedTests,
+                            "Success",
+                            "Tests generated successfully in " + testFile.getPath(),
                             NotificationType.INFORMATION
                     ),
                     project
             );
-
-        } else {
-            Notifications.Bus.notify(
-                    new Notification(
-                            "Test Generation",
-                            "Test Generation Failed",
-                            "The selected file is not a valid Python file.",
-                            NotificationType.WARNING
-                    ),
-                    project
-            );
+        } catch (IOException ioException) {
+            log.error("Could not create tests: {}", ioException.getMessage());
         }
+
     }
 
     public static void triggerForElement(PsiElement element) {
