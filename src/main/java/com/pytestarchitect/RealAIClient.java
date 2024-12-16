@@ -42,7 +42,7 @@ public class RealAIClient implements AIClient {
             Map<String, Object> requestBody = Map.of(
                     "temperature", 0.7,
                     "messages", messages,
-                    "model", "gpt-4o"
+                    "model", "gpt-4o-mini"
             );
             String jsonRequest = gson.toJson(requestBody);
             logger.info("Generated JSON Request: " + jsonRequest);
@@ -59,6 +59,8 @@ public class RealAIClient implements AIClient {
                 if (!response.isSuccessful()) {
 
                     logger.severe("AI API call failed with response code: " + response.code());
+                    logger.severe("AI API call failed with response message: " + response.message());
+
                     return null;
                 }
 
