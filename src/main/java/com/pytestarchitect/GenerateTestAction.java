@@ -6,7 +6,11 @@ import com.intellij.notification.Notifications;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.WriteAction;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -77,56 +81,95 @@ public class GenerateTestAction extends AnAction {
 
         PsiElement targetElement = pyClass != null ? pyClass : pyFunction;
         String sourceCode = extractCodeForElement(targetElement);
-
         String augmentedSourceCode = "# Import path: from " + importPath + " import *\n" + sourceCode;
 
+        // Display a progress bar while generating tests
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Generating Tests...", true) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                    indicator.setIndeterminate(true);
+                    indicator.setText("Contacting AI to generate tests...");
 
-        String testCode = testGenerationService.generateTests(augmentedSourceCode);
-        if (testCode == null || testCode.isEmpty()) {
-            log.warn("No tests generated for {}", name);
-            log.warn("Source code: {}", sourceCode);
-            return;
-        }
-        try {
-            VirtualFile baseDir = project.getBaseDir();
-            if (baseDir == null) {
-                log.warn("Project base directory not found: {}", project.getName());
-                return;
+                    // Generate test code
+                    String testCode = testGenerationService.generateTests(augmentedSourceCode);
+                    if (testCode == null || testCode.isEmpty()) {
+                        log.warn("No tests generated for {}", name);
+                        log.warn("Source code: {}", sourceCode);
+                        ApplicationManager.getApplication().invokeLater(() ->
+                                Notifications.Bus.notify(
+                                        new Notification(
+                                                "Test Generation",
+                                                "Warning",
+                                                "Failed to generate tests for " + name,
+                                                NotificationType.WARNING
+                                        ),
+                                        project
+                                )
+                        );
+                        return;
+                    }
+
+                    // Save the tests in the 'tests' directory
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        try {
+                            VirtualFile baseDir = project.getBaseDir();
+                            if (baseDir == null) {
+                                log.warn("Project base directory not found: {}", project.getName());
+                                return;
+                            }
+
+                            VirtualFile testsDir = WriteAction.compute(() -> {
+                                VirtualFile dir = baseDir.findChild("tests");
+                                if (dir == null) {
+                                    dir = baseDir.createChildDirectory(this, "tests");
+                                }
+                                return dir;
+                            });
+
+                            String fileName = "test_" + name.toLowerCase() + ".py";
+                            VirtualFile testFile = WriteAction.compute(() -> {
+                                VirtualFile file = testsDir.findChild(fileName);
+                                if (file == null) {
+                                    file = testsDir.createChildData(this, fileName);
+                                }
+                                return file;
+                            });
+
+                            WriteAction.run(() -> VfsUtil.saveText(testFile, testCode));
+
+                            Notifications.Bus.notify(
+                                    new Notification(
+                                            "Test Generation",
+                                            "Success",
+                                            "Tests generated successfully in " + testFile.getPath(),
+                                            NotificationType.INFORMATION
+                                    ),
+                                    project
+                            );
+                        } catch (IOException ioException) {
+                            log.error("Could not create tests: {}", ioException.getMessage());
+                        }
+                    });
+
+                } catch (Exception ex) {
+                    log.error("Error during test generation: {}", ex.getMessage(), ex);
+                    ApplicationManager.getApplication().invokeLater(() ->
+                            Notifications.Bus.notify(
+                                    new Notification(
+                                            "Test Generation",
+                                            "Error",
+                                            "Error while generating tests: " + ex.getMessage(),
+                                            NotificationType.ERROR
+                                    ),
+                                    project
+                            )
+                    );
+                }
             }
-
-            VirtualFile testsDir = WriteAction.compute(() -> {
-                VirtualFile dir = baseDir.findChild("tests");
-                if (dir == null) {
-                    dir = baseDir.createChildDirectory(this, "tests");
-                }
-                return dir;
-            });
-
-            String fileName = "test_" + name.toLowerCase() + ".py";
-            VirtualFile testFile = WriteAction.compute(() -> {
-                VirtualFile file = testsDir.findChild(fileName);
-                if (file == null) {
-                    file = testsDir.createChildData(this, fileName);
-                }
-                return file;
-            });
-
-            WriteAction.run(() -> VfsUtil.saveText(testFile, testCode));
-
-            Notifications.Bus.notify(
-                    new Notification(
-                            "Test Generation",
-                            "Success",
-                            "Tests generated successfully in " + testFile.getPath(),
-                            NotificationType.INFORMATION
-                    ),
-                    project
-            );
-        } catch (IOException ioException) {
-            log.error("Could not create tests: {}", ioException.getMessage());
-        }
-
+        });
     }
+
 
     public static void triggerForElement(PsiElement element) {
         String code = extractCodeForElement(element);
