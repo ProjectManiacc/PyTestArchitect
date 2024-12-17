@@ -27,18 +27,11 @@ import java.io.IOException;
 public class GenerateTestAction extends AnAction {
 
     private static final Logger log = LoggerFactory.getLogger(GenerateTestAction.class);
-    private static TestGenerationService testGenerationService;
+    private static TestGenerationService testGenerationService = new DummyTestGenerationService();
 
-    static {
-        testGenerationService = new DummyTestGenerationService();
-    }
-
+    // Setter for dependency injection (testing purposes)
     public static void setTestGenerationService(TestGenerationService service) {
-        GenerateTestAction.testGenerationService = service;
-    }
-
-    public static TestGenerationService getTestGenerationService() {
-        return GenerateTestAction.testGenerationService;
+        testGenerationService = service;
     }
 
     @Override
@@ -46,132 +39,133 @@ public class GenerateTestAction extends AnAction {
         Project project = event.getProject();
         if (project == null) return;
 
-        var editor = event.getData(CommonDataKeys.EDITOR);
-        if (editor == null) return;
+        TestContext testContext = getTestContext(event, project);
+        if (testContext == null) return;
 
-        var psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.getDocument());
-        if (psiFile == null) return;
-
-        VirtualFile fileUnderTests = psiFile.getVirtualFile();
-        String importPath = getRelativeImportPath(project, fileUnderTests);
-        if (importPath == null) {
-            log.warn("Could not determine import path for the file. {}, {}", project.getName(), fileUnderTests.getPath());
-            return;
-        }
-
-        int offset = editor.getCaretModel().getOffset();
-        PsiElement element = psiFile.findElementAt(offset);
-        if (element == null) {
-            log.warn("No element found at offset {}", offset);
-            return;
-        }
-
-        PyClass pyClass = PsiTreeUtil.getParentOfType(element, PyClass.class);
-        PyFunction pyFunction = PsiTreeUtil.getParentOfType(element, PyFunction.class);
-
-        String name;
-        if (pyClass != null) {
-            name = pyClass.getName();
-        } else if (pyFunction != null) {
-            name = pyFunction.getName();
-        } else {
-            log.warn("No valid class or function found at offset {}", offset);
-            return;
-        }
-
-        PsiElement targetElement = pyClass != null ? pyClass : pyFunction;
-        String sourceCode = extractCodeForElement(targetElement);
-        String augmentedSourceCode = "# Import path: from " + importPath + " import *\n" + sourceCode;
-
-        // Display a progress bar while generating tests
         ProgressManager.getInstance().run(new Task.Backgroundable(project, "Generating Tests...", true) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
-                try {
-                    indicator.setIndeterminate(true);
-                    indicator.setText("Contacting AI to generate tests...");
+                indicator.setIndeterminate(true);
+                indicator.setText("Contacting AI to generate tests...");
 
-                    // Generate test code
-                    String testCode = testGenerationService.generateTests(augmentedSourceCode);
-                    if (testCode == null || testCode.isEmpty()) {
-                        log.warn("No tests generated for {}", name);
-                        log.warn("Source code: {}", sourceCode);
-                        ApplicationManager.getApplication().invokeLater(() ->
-                                Notifications.Bus.notify(
-                                        new Notification(
-                                                "Test Generation",
-                                                "Warning",
-                                                "Failed to generate tests for " + name,
-                                                NotificationType.WARNING
-                                        ),
-                                        project
-                                )
-                        );
-                        return;
-                    }
+                String augmentedSourceCode = createAugmentedSourceCode(testContext.sourceCode, testContext.importPath);
+                String testCode = testGenerationService.generateTests(augmentedSourceCode);
 
-                    // Save the tests in the 'tests' directory
-                    ApplicationManager.getApplication().invokeLater(() -> {
-                        try {
-                            VirtualFile baseDir = project.getBaseDir();
-                            if (baseDir == null) {
-                                log.warn("Project base directory not found: {}", project.getName());
-                                return;
-                            }
-
-                            VirtualFile testsDir = WriteAction.compute(() -> {
-                                VirtualFile dir = baseDir.findChild("tests");
-                                if (dir == null) {
-                                    dir = baseDir.createChildDirectory(this, "tests");
-                                }
-                                return dir;
-                            });
-
-                            String fileName = "test_" + name.toLowerCase() + ".py";
-                            VirtualFile testFile = WriteAction.compute(() -> {
-                                VirtualFile file = testsDir.findChild(fileName);
-                                if (file == null) {
-                                    file = testsDir.createChildData(this, fileName);
-                                }
-                                return file;
-                            });
-
-                            WriteAction.run(() -> VfsUtil.saveText(testFile, testCode));
-
-                            Notifications.Bus.notify(
-                                    new Notification(
-                                            "Test Generation",
-                                            "Success",
-                                            "Tests generated successfully in " + testFile.getPath(),
-                                            NotificationType.INFORMATION
-                                    ),
-                                    project
-                            );
-                        } catch (IOException ioException) {
-                            log.error("Could not create tests: {}", ioException.getMessage());
-                        }
-                    });
-
-                } catch (Exception ex) {
-                    log.error("Error during test generation: {}", ex.getMessage(), ex);
-                    ApplicationManager.getApplication().invokeLater(() ->
-                            Notifications.Bus.notify(
-                                    new Notification(
-                                            "Test Generation",
-                                            "Error",
-                                            "Error while generating tests: " + ex.getMessage(),
-                                            NotificationType.ERROR
-                                    ),
-                                    project
-                            )
-                    );
+                if (testCode == null || testCode.isEmpty()) {
+                    log.warn("No tests generated for {}", testContext.name);
+                    notifyUser(project, "Failed to generate tests for " + testContext.name, NotificationType.WARNING);
+                    return;
                 }
+
+                saveGeneratedTests(project, testContext.name, testCode);
             }
         });
     }
 
 
+    private TestContext getTestContext(@NotNull AnActionEvent event, Project project) {
+        var editor = event.getData(CommonDataKeys.EDITOR);
+        if (editor == null) return null;
+
+        var psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.getDocument());
+        if (psiFile == null) return null;
+
+        VirtualFile fileUnderTests = psiFile.getVirtualFile();
+        String importPath = getRelativeImportPath(project, fileUnderTests);
+        if (importPath == null) {
+            log.warn("Could not determine import path for the file.");
+            return null;
+        }
+
+        PsiElement element = psiFile.findElementAt(editor.getCaretModel().getOffset());
+        if (element == null) {
+            log.warn("No element found at caret position.");
+            return null;
+        }
+
+        PyClass pyClass = PsiTreeUtil.getParentOfType(element, PyClass.class);
+        PyFunction pyFunction = PsiTreeUtil.getParentOfType(element, PyFunction.class);
+
+        String name = pyClass != null ? pyClass.getName() : (pyFunction != null ? pyFunction.getName() : null);
+        if (name == null) {
+            log.warn("No valid class or function found at caret position.");
+            return null;
+        }
+
+        PsiElement targetElement = pyClass != null ? pyClass : pyFunction;
+        String sourceCode = targetElement.getText();
+
+        return new TestContext(name, sourceCode, importPath);
+    }
+
+
+    private String createAugmentedSourceCode(String sourceCode, String importPath) {
+        return "# Import path: from " + importPath + " import *\n" + sourceCode;
+    }
+
+
+    private void saveGeneratedTests(Project project, String testName, String testCode) {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            try {
+                VirtualFile testsDir = createTestsDirectory(project);
+                VirtualFile testFile = createTestFile(testsDir, testName, testCode);
+
+                notifyUser(project, "Tests generated successfully in " + testFile.getPath(), NotificationType.INFORMATION);
+            } catch (IOException e) {
+                log.error("Could not create tests: {}", e.getMessage());
+                notifyUser(project, "Error creating test file: " + e.getMessage(), NotificationType.ERROR);
+            }
+        });
+    }
+
+
+    private VirtualFile createTestsDirectory(Project project) throws IOException {
+        VirtualFile baseDir = project.getBaseDir();
+        if (baseDir == null) throw new IOException("Project base directory not found.");
+
+        return WriteAction.compute(() -> {
+            VirtualFile dir = baseDir.findChild("tests");
+            if (dir == null) {
+                dir = baseDir.createChildDirectory(this, "tests");
+            }
+            return dir;
+        });
+    }
+
+
+    private VirtualFile createTestFile(VirtualFile testsDir, String testName, String testCode) throws IOException {
+        String fileName = "test_" + testName.toLowerCase() + ".py";
+        return WriteAction.compute(() -> {
+            VirtualFile file = testsDir.findChild(fileName);
+            if (file == null) {
+                file = testsDir.createChildData(this, fileName);
+            }
+            VfsUtil.saveText(file, testCode);
+            return file;
+        });
+    }
+
+
+    private void notifyUser(Project project, String message, NotificationType type) {
+        Notifications.Bus.notify(
+                new Notification("Test Generation", "Test Generation", message, type), project
+        );
+    }
+
+
+    private String getRelativeImportPath(Project project, VirtualFile file) {
+        VirtualFile baseDir = project.getBaseDir();
+        if (baseDir == null) return null;
+
+        String relativePath = VfsUtil.getRelativePath(file, baseDir, '/');
+        if (relativePath == null) return null;
+
+        return relativePath.replaceAll("\\.py$", "").replace('/', '.');
+    }
+
     public static void triggerForElement(PsiElement element) {
+        if (element == null) return;
+
         String code = extractCodeForElement(element);
         if (code == null || code.isEmpty()) {
             TestState.setLastGeneratedTests("No code found for this element.");
@@ -184,25 +178,27 @@ public class GenerateTestAction extends AnAction {
         Notification notification = new Notification(
                 "Test Generation",
                 "Generated Tests",
-                testCode,
+                testCode != null ? testCode : "No tests generated.",
                 NotificationType.INFORMATION
         );
         Notifications.Bus.notify(notification);
     }
 
-    private String getRelativeImportPath(Project project, VirtualFile file) {
-        VirtualFile baseDir = project.getBaseDir();
-        if (baseDir == null) return null;
-
-        String relativePath = VfsUtil.getRelativePath(file, baseDir, '/');
-        if (relativePath == null) return null;
-
-        relativePath = relativePath.replaceAll("\\.py$", "").replace('/', '.');
-        return relativePath;
+    public static String extractCodeForElement(PsiElement element) {
+        if (element == null) return null;
+        return element.getText();
     }
 
 
-    private static String extractCodeForElement(PsiElement element) {
-        return element.getText();
+    private static class TestContext {
+        final String name;
+        final String sourceCode;
+        final String importPath;
+
+        TestContext(String name, String sourceCode, String importPath) {
+            this.name = name;
+            this.sourceCode = sourceCode;
+            this.importPath = importPath;
+        }
     }
 }
