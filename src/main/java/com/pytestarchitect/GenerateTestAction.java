@@ -48,6 +48,13 @@ public class GenerateTestAction extends AnAction {
         var psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.getDocument());
         if (psiFile == null) return;
 
+        VirtualFile fileUnderTests = psiFile.getVirtualFile();
+        String importPath = getRelativeImportPath(project, fileUnderTests);
+        if (importPath == null) {
+            log.warn("Could not determine import path for the file. {}, {}", project.getName(), fileUnderTests.getPath());
+            return;
+        }
+
         int offset = editor.getCaretModel().getOffset();
         PsiElement element = psiFile.findElementAt(offset);
         if (element == null) {
@@ -71,7 +78,10 @@ public class GenerateTestAction extends AnAction {
         PsiElement targetElement = pyClass != null ? pyClass : pyFunction;
         String sourceCode = extractCodeForElement(targetElement);
 
-        String testCode = testGenerationService.generateTests(sourceCode);
+        String augmentedSourceCode = "# Import path: from " + importPath + " import *\n" + sourceCode;
+
+
+        String testCode = testGenerationService.generateTests(augmentedSourceCode);
         if (testCode == null || testCode.isEmpty()) {
             log.warn("No tests generated for {}", name);
             log.warn("Source code: {}", sourceCode);
@@ -136,6 +146,18 @@ public class GenerateTestAction extends AnAction {
         );
         Notifications.Bus.notify(notification);
     }
+
+    private String getRelativeImportPath(Project project, VirtualFile file) {
+        VirtualFile baseDir = project.getBaseDir();
+        if (baseDir == null) return null;
+
+        String relativePath = VfsUtil.getRelativePath(file, baseDir, '/');
+        if (relativePath == null) return null;
+
+        relativePath = relativePath.replaceAll("\\.py$", "").replace('/', '.');
+        return relativePath;
+    }
+
 
     private static String extractCodeForElement(PsiElement element) {
         return element.getText();
