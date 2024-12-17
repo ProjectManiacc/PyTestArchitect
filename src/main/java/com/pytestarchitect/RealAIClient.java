@@ -32,7 +32,14 @@ public class RealAIClient implements AIClient {
             List<Map<String, String>> messages = new ArrayList<>();
             messages.add(Map.of(
                 "role", "system",
-                "content", "You are a tool that generates Python unit tests using pytest. Ensure tests cover all methods and edge cases."
+                "content", "\"You are an assistant that generates Python unit tests using pytest. \"\n" +
+                            "+ \"Return ONLY valid Python code without any additional explanation and without markdown formatting like ```python. . \"\n" +
+                            "+ \"Each test case should test a single functionality with one assertion per test. \"\n" +
+                            "+ \"If multiple test cases require a shared setup, include a setup method using pytest's fixture system, and include a corresponding teardown step. " +
+                            "+ \"Use mocks only when necessary, and avoid including external dependencies unless required. \"\n" +
+                            "+ \"Consider edge cases and error conditions in your test cases. \"\n" +
+                            "+ \"Remember to use docstrings to describe the purpose of each test case. \"\n" +
+                            "+ \"Name the test methods following the pytest naming convention (test_<function name>_<functionality>).\""
             ));
             messages.add(Map.of(
                     "role", "user",
@@ -40,7 +47,7 @@ public class RealAIClient implements AIClient {
             ));
 
             Map<String, Object> requestBody = Map.of(
-                    "temperature", 0.7,
+                    "temperature", 0.5,
                     "messages", messages,
                     "model", "gpt-4o-mini"
             );
