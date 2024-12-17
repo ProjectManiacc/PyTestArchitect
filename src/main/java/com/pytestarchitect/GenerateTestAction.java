@@ -177,7 +177,7 @@ public class GenerateTestAction extends AnAction {
 
         Notification notification = new Notification(
                 "Test Generation",
-                "Generated Tests",
+                "Generated Testsadsadas",
                 testCode != null ? testCode : "No tests generated.",
                 NotificationType.INFORMATION
         );

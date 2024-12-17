@@ -31,7 +31,7 @@
 
 
     <extensions defaultExtensionNs="com.intellij">
-        <lineMarkerProvider language="Python" implementationClass="com.pytestarchitect.PluginLineMarkerProvider"/>
+        <codeInsight.lineMarkerProvider language="Python" implementationClass="com.pytestarchitect.PluginLineMarkerProvider"/>
     </extensions>
 
     <applicationListeners>
