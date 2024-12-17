@@ -2,6 +2,7 @@ package com.pytestarchitect;
 
 import com.intellij.codeInsight.daemon.LineMarkerInfo;
 import com.intellij.codeInsight.daemon.LineMarkerProvider;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.markup.GutterIconRenderer;
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.psi.PsiElement;
@@ -39,8 +40,9 @@ public class PluginLineMarkerProvider implements LineMarkerProvider{
     }
 
     private void triggerGenerateTests(PsiElement element) {
-        GenerateTestAction.triggerForElement(element);
-    }
+        ApplicationManager.getApplication().invokeLater(() -> {
+            GenerateTestAction.triggerForElement(element);
+        });    }
 
     @Override
     public void collectSlowLineMarkers(@NotNull List<? extends PsiElement> elements,

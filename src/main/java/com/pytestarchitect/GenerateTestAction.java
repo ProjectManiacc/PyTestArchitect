@@ -104,7 +104,7 @@ public class GenerateTestAction extends AnAction {
     }
 
 
-    private void saveGeneratedTests(Project project, String testName, String testCode) {
+    private static void saveGeneratedTests(Project project, String testName, String testCode) {
         ApplicationManager.getApplication().invokeLater(() -> {
             try {
                 VirtualFile testsDir = createTestsDirectory(project);
@@ -119,26 +119,26 @@ public class GenerateTestAction extends AnAction {
     }
 
 
-    private VirtualFile createTestsDirectory(Project project) throws IOException {
+    private static VirtualFile createTestsDirectory(Project project) throws IOException {
         VirtualFile baseDir = project.getBaseDir();
         if (baseDir == null) throw new IOException("Project base directory not found.");
 
         return WriteAction.compute(() -> {
             VirtualFile dir = baseDir.findChild("tests");
             if (dir == null) {
-                dir = baseDir.createChildDirectory(this, "tests");
+                dir = baseDir.createChildDirectory(GenerateTestAction.class, "tests");
             }
             return dir;
         });
     }
 
 
-    private VirtualFile createTestFile(VirtualFile testsDir, String testName, String testCode) throws IOException {
+    private static VirtualFile createTestFile(VirtualFile testsDir, String testName, String testCode) throws IOException {
         String fileName = "test_" + testName.toLowerCase() + ".py";
         return WriteAction.compute(() -> {
             VirtualFile file = testsDir.findChild(fileName);
             if (file == null) {
-                file = testsDir.createChildData(this, fileName);
+                file = testsDir.createChildData(GenerateTestAction.class, fileName);
             }
             VfsUtil.saveText(file, testCode);
             return file;
@@ -146,7 +146,7 @@ public class GenerateTestAction extends AnAction {
     }
 
 
-    private void notifyUser(Project project, String message, NotificationType type) {
+    private static void notifyUser(Project project, String message, NotificationType type) {
         Notifications.Bus.notify(
                 new Notification("Test Generation", "Test Generation", message, type), project
         );
@@ -164,24 +164,30 @@ public class GenerateTestAction extends AnAction {
     }
 
     public static void triggerForElement(PsiElement element) {
-        if (element == null) return;
+        Project project = element.getProject();
+        String sourceCode = element.getText();
+        String name = element instanceof PyClass ? ((PyClass) element).getName()
+                : element instanceof PyFunction ? ((PyFunction) element).getName()
+                : "unknown";
 
-        String code = extractCodeForElement(element);
-        if (code == null || code.isEmpty()) {
-            TestState.setLastGeneratedTests("No code found for this element.");
-            return;
-        }
+        String augmentedSourceCode = "# Generating tests for: " + name + "\n" + sourceCode;
 
-        String testCode = testGenerationService.generateTests(code);
-        TestState.setLastGeneratedTests(testCode);
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Generating Tests...", true) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                indicator.setIndeterminate(true);
+                indicator.setText("Contacting AI to generate tests...");
 
-        Notification notification = new Notification(
-                "Test Generation",
-                "Generated Testsadsadas",
-                testCode != null ? testCode : "No tests generated.",
-                NotificationType.INFORMATION
-        );
-        Notifications.Bus.notify(notification);
+                String testCode = testGenerationService.generateTests(augmentedSourceCode);
+
+                if (testCode == null || testCode.isEmpty()) {
+                    notifyUser(project, "Failed to generate tests for " + name, NotificationType.WARNING);
+                    return;
+                }
+
+                saveGeneratedTests(project, name, testCode);
+            }
+        });
     }
 
     public static String extractCodeForElement(PsiElement element) {
