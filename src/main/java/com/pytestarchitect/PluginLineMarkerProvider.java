@@ -1,48 +1,48 @@
 package com.pytestarchitect;
 
-import com.intellij.lang.annotation.AnnotationHolder;
+import com.intellij.codeInsight.daemon.LineMarkerInfo;
+import com.intellij.codeInsight.daemon.LineMarkerProvider;
 import com.intellij.openapi.editor.markup.GutterIconRenderer;
-import com.intellij.psi.*;
-import com.intellij.codeInsight.daemon.*;
+import com.intellij.psi.PsiElement;
 import com.jetbrains.python.psi.PyClass;
 import com.jetbrains.python.psi.PyFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import javax.swing.*;
 import java.util.Collection;
 import java.util.List;
 
 public class PluginLineMarkerProvider implements LineMarkerProvider{
-    private static final Icon TEST_ICON = com.intellij.icons.AllIcons.RunConfigurations.TestState.Run;
+    private static final Icon TEST_ICON = new ImageIcon(PluginLineMarkerProvider.class.getResource("/resources/icons/magicResolveDark.svg"));
 
     @Override
-    @Nullable
-    public LineMarkerInfo<?> getLineMarkerInfo(@NotNull PsiElement element) {
-        if (element instanceof PyClass) {
-            System.out.println("Found class: " + ((PyClass) element).getName());
-            return createMarker(element, "Generate tests for class");
-        }
-        else if (element instanceof PyFunction) {
-            System.out.println("Found function: " + ((PyFunction) element).getName());
-            return createMarker(element, "Generate tests for function");
+    public @Nullable LineMarkerInfo<PsiElement> getLineMarkerInfo(@NotNull PsiElement element) {
+        System.out.println("Inspecting element: {}" +  element.getText());
+
+        if (element instanceof PyClass || element instanceof PyFunction) {
+            System.out.println("Element eligible for LineMarker: " + element.getText());
+
+            return new LineMarkerInfo<>(
+                    element,
+                    element.getTextRange(),
+                    TEST_ICON,
+                    psiElement -> "Generate Tests",
+                    (e, elt) -> triggerGenerateTests(elt),
+                    GutterIconRenderer.Alignment.LEFT,
+                    () -> "Generate Tests"
+            );
         }
         return null;
     }
 
-    private LineMarkerInfo<?> createMarker(PsiElement element, String tooltip) {
-        return new LineMarkerInfo<>(
-                element,
-                element.getTextRange(),
-                TEST_ICON,
-                psi -> tooltip,
-                (mouse, elt) -> onMarkerClick(elt),
-                GutterIconRenderer.Alignment.LEFT,
-                () -> tooltip
-        );
+    private void triggerGenerateTests(PsiElement element) {
+        GenerateTestAction.triggerForElement(element);
     }
 
-    private void onMarkerClick(PsiElement element) {
-        GenerateTestAction.triggerForElement(element);
+    @Override
+    public void collectSlowLineMarkers(@NotNull List<? extends PsiElement> elements,
+                                       @NotNull Collection<? super LineMarkerInfo<?>> result) {
     }
 
 }

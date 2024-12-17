@@ -13,6 +13,7 @@
                 class="com.pytestarchitect.GenerateTestAction"
                 text="Generate Test"
                 icon="/icons/magicResolveDark.svg">
+            <keyboard-shortcut first-keystroke="ctrl shift alt A" keymap="Default"/>
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
     </actions>
@@ -23,9 +24,10 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.python</depends>
+    <depends>Pythonid</depends>
+
 
     <resource-bundle>messages.MyBundle</resource-bundle>
-
 
 
     <extensions defaultExtensionNs="com.intellij">
