@@ -9,6 +9,7 @@ import java.awt.*;
 import java.util.*;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.pytestarchitect.AIBackendTestGenerationService.logger;
 
@@ -22,7 +23,11 @@ public class RealAIClient implements AIClient {
 
     public RealAIClient(String apiKey) {
         this.apiKey = apiKey;
-        this.httpClient = new OkHttpClient();
+        this.httpClient = new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .build();
     }
 
 

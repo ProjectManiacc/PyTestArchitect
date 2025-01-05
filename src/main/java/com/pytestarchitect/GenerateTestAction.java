@@ -29,13 +29,13 @@ public class GenerateTestAction extends AnAction {
     private static final Logger log = LoggerFactory.getLogger(GenerateTestAction.class);
     private static TestGenerationService testGenerationService = new DummyTestGenerationService();
 
-    // Setter for dependency injection (testing purposes)
     public static void setTestGenerationService(TestGenerationService service) {
         testGenerationService = service;
     }
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent event) {
+        long startTime = System.currentTimeMillis();
         Project project = event.getProject();
         if (project == null) return;
 
@@ -58,8 +58,13 @@ public class GenerateTestAction extends AnAction {
                 }
 
                 saveGeneratedTests(project, testContext.name, testCode);
+                long endTime = System.currentTimeMillis();
+                double duration = (endTime - startTime) / 1000.0;
+                String formattedDuration = String.format("%.1f", duration);
+                notifyUser(project, "Generating tests took: " + formattedDuration + "s", NotificationType.INFORMATION);
             }
         });
+
     }
 
 
