@@ -69,14 +69,14 @@ public class RealAIClient implements AIClient {
             try (Response response = httpClient.newCall(request).execute()) {
                 if (response.code() == 401) {
                     logger.severe("Invalid API key.");
-                    return "Invalid API key. Please verify your configuration";
+                    throw new IllegalArgumentException("Invalid API key. Please verify your configuration.");
                 }
                 if (!response.isSuccessful()) {
 
                     logger.severe("AI API call failed with response code: " + response.code());
                     logger.severe("AI API call failed with response message: " + response.message());
 
-                    return null;
+                    throw new IOException("An error occurred while contacting the API: " + response.message());
                 }
 
                 String responseBody = response.body().string();
@@ -86,13 +86,13 @@ public class RealAIClient implements AIClient {
 
                 if (completion.choices == null || completion.choices.isEmpty()) {
                     logger.severe("AI API returned an empty choices list.");
-                    return null;
+                    throw new IOException("No test cases were generated. API returned an empty response.");
                 }
                 return completion.choices.get(0).message.content.trim();
             }
         } catch (IOException e) {
             logger.warning("Failed to connect to API: " + e.getMessage());
-            return null;
+            throw new RuntimeException("Unable to connect to API. Check your network connection.");
         }
 
     }

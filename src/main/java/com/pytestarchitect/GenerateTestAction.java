@@ -52,23 +52,31 @@ public class GenerateTestAction extends AnAction {
         ProgressManager.getInstance().run(new Task.Backgroundable(project, "Generating Tests...", true) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
-                indicator.setIndeterminate(true);
-                indicator.setText("Contacting AI to generate tests...");
+                try {
+                    indicator.setIndeterminate(true);
+                    indicator.setText("Connecting with API to generate tests...");
 
-                String augmentedSourceCode = createAugmentedSourceCode(testContext.sourceCode, testContext.importPath);
-                String testCode = testGenerationService.generateTests(augmentedSourceCode);
+                    String augmentedSourceCode = createAugmentedSourceCode(testContext.sourceCode, testContext.importPath);
+                    String testCode = testGenerationService.generateTests(augmentedSourceCode);
 
-                if (testCode == null || testCode.isEmpty()) {
-                    log.warn("No tests generated for {}", testContext.name);
-                    notifyUser(project, "Failed to generate tests for " + testContext.name, NotificationType.WARNING);
-                    return;
+                    if (testCode == null || testCode.isEmpty()) {
+                        log.warn("No tests generated for {}", testContext.name);
+                        throw new RuntimeException("Failed to generate tests for " + testContext.name);
+
+                    }
+
+                    saveGeneratedTests(project, testContext.name, testCode);
+                    long endTime = System.currentTimeMillis();
+                    double duration = (endTime - startTime) / 1000.0;
+                    String formattedDuration = String.format("%.1f", duration);
+                    notifyUser(project, "Generating tests took: " + formattedDuration + "s", NotificationType.INFORMATION);
+                } catch (IllegalArgumentException e) {
+                    notifyUser(project, e.getMessage(), NotificationType.ERROR);
+                } catch (RuntimeException e) {
+                    notifyUser(project, e.getMessage(), NotificationType.ERROR);
+                } catch (Exception e) {
+                    notifyUser(project, "An unexpected error occurred: " + e.getMessage(), NotificationType.ERROR);
                 }
-
-                saveGeneratedTests(project, testContext.name, testCode);
-                long endTime = System.currentTimeMillis();
-                double duration = (endTime - startTime) / 1000.0;
-                String formattedDuration = String.format("%.1f", duration);
-                notifyUser(project, "Generating tests took: " + formattedDuration + "s", NotificationType.INFORMATION);
             }
         });
 
