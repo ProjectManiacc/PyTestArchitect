@@ -139,22 +139,22 @@ public class GenerateTestAction extends AnAction {
 
     private boolean isValidSyntax(String code) {
         try {
-            // Write the code to a temporary file
+
             File tempFile = File.createTempFile("temp", ".py");
             Files.write(tempFile.toPath(), code.getBytes(StandardCharsets.UTF_8));
 
-            // Use Python's `py_compile` module to validate syntax
+
             Process process = new ProcessBuilder("python", "-m", "py_compile", tempFile.getAbsolutePath())
                     .redirectErrorStream(true)
                     .start();
 
             int exitCode = process.waitFor();
-            tempFile.delete(); // Clean up the temp file
+            tempFile.delete();
 
-            return exitCode == 0; // Valid syntax if exit code is 0
+            return exitCode == 0;
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
-            return false; // Treat exceptions as invalid syntax
+            return false;
         }
     }
 
