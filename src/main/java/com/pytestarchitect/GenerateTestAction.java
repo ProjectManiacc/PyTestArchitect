@@ -42,13 +42,18 @@ public class GenerateTestAction extends AnAction {
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent event) {
-        long startTime = System.currentTimeMillis();
         Project project = event.getProject();
         if (project == null) return;
 
         TestContext testContext = getTestContext(event, project);
         if (testContext == null) return;
 
+        generateTestsForElement(project, testContext);
+
+
+    }
+
+    private void generateTestsForElement(Project project, TestContext testContext) {
         ProgressManager.getInstance().run(new Task.Backgroundable(project, "Generating Tests...", true) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -56,20 +61,14 @@ public class GenerateTestAction extends AnAction {
                     indicator.setIndeterminate(true);
                     indicator.setText("Connecting with API to generate tests...");
 
-                    String augmentedSourceCode = createAugmentedSourceCode(testContext.sourceCode, testContext.importPath, testContext.name);
+                    String augmentedSourceCode = createAugmentedSourceCode(testContext);
                     String testCode = testGenerationService.generateTests(augmentedSourceCode);
 
                     if (testCode == null || testCode.isEmpty()) {
-                        log.warn("No tests generated for {}", testContext.name);
                         throw new RuntimeException("Failed to generate tests for " + testContext.name);
-
                     }
 
                     saveGeneratedTests(project, testContext.name, testCode);
-                    long endTime = System.currentTimeMillis();
-                    double duration = (endTime - startTime) / 1000.0;
-                    String formattedDuration = String.format("%.1f", duration);
-                    notifyUser(project, "Generating tests took: " + formattedDuration + "s", NotificationType.INFORMATION);
                 } catch (IllegalArgumentException e) {
                     notifyUser(project, e.getMessage(), NotificationType.ERROR);
                 } catch (RuntimeException e) {
@@ -79,9 +78,7 @@ public class GenerateTestAction extends AnAction {
                 }
             }
         });
-
     }
-
 
     private TestContext getTestContext(@NotNull AnActionEvent event, Project project) {
         var editor = event.getData(CommonDataKeys.EDITOR);
@@ -159,8 +156,8 @@ public class GenerateTestAction extends AnAction {
     }
 
 
-    private String createAugmentedSourceCode(String sourceCode, String importPath, String name) {
-        return "# Import path: from " + importPath + " import " + name + "\n" + sourceCode;
+    private String createAugmentedSourceCode(TestContext testContext) {
+        return "# Import path: from " + testContext.importPath + " import " + testContext.name + "\n" + testContext.sourceCode;
     }
 
 
@@ -248,11 +245,6 @@ public class GenerateTestAction extends AnAction {
                 saveGeneratedTests(project, name, testCode);
             }
         });
-    }
-
-    public static String extractCodeForElement(PsiElement element) {
-        if (element == null) return null;
-        return element.getText();
     }
 
 
