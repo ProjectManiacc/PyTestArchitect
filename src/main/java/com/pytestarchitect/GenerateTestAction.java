@@ -25,7 +25,11 @@ import com.intellij.psi.PsiElement;
 import com.jetbrains.python.psi.PyFile;
 import com.jetbrains.python.psi.PyElement;
 import com.intellij.psi.util.PsiTreeUtil;
+
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 public class GenerateTestAction extends AnAction {
 
@@ -78,7 +82,14 @@ public class GenerateTestAction extends AnAction {
         var psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.getDocument());
         if (psiFile == null) return null;
 
-        if (!isValidSyntax(psiFile)) {
+
+        if (psiFile.getText().trim().isEmpty()) {
+            log.warn("The file is empty.");
+            notifyUser(project, "The file is empty. Please add some code to generate tests.", NotificationType.WARNING);
+            return null;
+        }
+        if (!isValidSyntax(psiFile.getText().trim())) {
+            log.warn("Invalid syntax in the file.");
             notifyUser(project, "Invalid syntax", NotificationType.ERROR);
             return null;
         }
@@ -93,6 +104,7 @@ public class GenerateTestAction extends AnAction {
         PsiElement element = psiFile.findElementAt(editor.getCaretModel().getOffset());
         if (element == null) {
             log.warn("No element found at caret position.");
+            notifyUser(project, "No functions or classes detected at the caret position. Please select a valid element.", NotificationType.WARNING);
             return null;
         }
 
@@ -102,11 +114,13 @@ public class GenerateTestAction extends AnAction {
         String name = pyClass != null ? pyClass.getName() : (pyFunction != null ? pyFunction.getName() : null);
         if (name == null) {
             log.warn("No valid class or function found at caret position.");
+            notifyUser(project, "No functions or classes detected in the file", NotificationType.WARNING);
             return null;
         }
 
         PsiElement targetElement = pyClass != null ? pyClass : pyFunction;
         if (targetElement == null) {
+            log.warn("No valid class or function found at caret position, targetElement.");
             notifyUser(project, "No functions or classes detected in the file", NotificationType.WARNING);
             return null;
         }
@@ -115,20 +129,25 @@ public class GenerateTestAction extends AnAction {
         return new TestContext(name, sourceCode, importPath);
     }
 
-    private boolean isValidSyntax(PsiElement psiFile) {
-        if (!(psiFile instanceof PyFile)) {
-            return false;
+    private boolean isValidSyntax(String code) {
+        try {
+            // Write the code to a temporary file
+            File tempFile = File.createTempFile("temp", ".py");
+            Files.write(tempFile.toPath(), code.getBytes(StandardCharsets.UTF_8));
+
+            // Use Python's `py_compile` module to validate syntax
+            Process process = new ProcessBuilder("python", "-m", "py_compile", tempFile.getAbsolutePath())
+                    .redirectErrorStream(true)
+                    .start();
+
+            int exitCode = process.waitFor();
+            tempFile.delete(); // Clean up the temp file
+
+            return exitCode == 0; // Valid syntax if exit code is 0
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            return false; // Treat exceptions as invalid syntax
         }
-
-        PyFile pyFile = (PyFile) psiFile;
-
-        for (PyElement element : PsiTreeUtil.collectElementsOfType(pyFile, PyElement.class)) {
-            if (element.getNode() == null || element.getNode().getPsi() == null) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
 
