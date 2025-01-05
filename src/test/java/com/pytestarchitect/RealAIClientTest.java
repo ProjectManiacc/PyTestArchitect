@@ -7,6 +7,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
+
 import static org.junit.Assert.*;
 
 public class RealAIClientTest {
@@ -49,5 +51,43 @@ public class RealAIClientTest {
         String result = client.generateTests(sourceCode);
 
         assertNull(result);
+    }
+
+    @Test
+    public void testInvalidApiKey() {
+        mockWebServer.enqueue(new MockResponse().setResponseCode(401).setBody("Unauthorized"));
+
+        String result = client.generateTests("def foo():\n    return 42");
+        assertEquals("Invalid API key. Please verify your configuration", result);
+    }
+
+    @Test
+    public void testNoInternetConnection() throws IOException {
+        mockWebServer.shutdown();
+
+        String result = client.generateTests("def foo():\n    return 42");
+        assertEquals("Unable to connect to API. Check your network connection", result);
+    }
+
+    @Test
+    public void testEmptyFile() {
+        myFixture.configureByText("empty.py", "");
+
+        GenerateTestAction action = new GenerateTestAction();
+        myFixture.testAction(action);
+
+        String notification = TestState.getLastNotification();
+        assertEquals("No functions or classes detected in the file", notification);
+    }
+
+    @Test
+    public void testInvalidSyntax() {
+        myFixture.configureByText("invalid.py", "def foo(:\n    return 42");
+
+        GenerateTestAction action = new GenerateTestAction();
+        myFixture.testAction(action);
+
+        String notification = TestState.getLastNotification();
+        assertEquals("Invalid syntax", notification);
     }
 }

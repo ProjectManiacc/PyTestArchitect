@@ -21,7 +21,10 @@ import com.jetbrains.python.psi.PyFunction;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.intellij.psi.PsiElement;
+import com.jetbrains.python.psi.PyFile;
+import com.jetbrains.python.psi.PyElement;
+import com.intellij.psi.util.PsiTreeUtil;
 import java.io.IOException;
 
 public class GenerateTestAction extends AnAction {
@@ -75,6 +78,11 @@ public class GenerateTestAction extends AnAction {
         var psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.getDocument());
         if (psiFile == null) return null;
 
+        if (!isValidSyntax(psiFile)) {
+            notifyUser(project, "Invalid syntax", NotificationType.ERROR);
+            return null;
+        }
+
         VirtualFile fileUnderTests = psiFile.getVirtualFile();
         String importPath = getRelativeImportPath(project, fileUnderTests);
         if (importPath == null) {
@@ -98,9 +106,29 @@ public class GenerateTestAction extends AnAction {
         }
 
         PsiElement targetElement = pyClass != null ? pyClass : pyFunction;
+        if (targetElement == null) {
+            notifyUser(project, "No functions or classes detected in the file", NotificationType.WARNING);
+            return null;
+        }
         String sourceCode = targetElement.getText();
 
         return new TestContext(name, sourceCode, importPath);
+    }
+
+    private boolean isValidSyntax(PsiElement psiFile) {
+        if (!(psiFile instanceof PyFile)) {
+            return false;
+        }
+
+        PyFile pyFile = (PyFile) psiFile;
+
+        for (PyElement element : PsiTreeUtil.collectElementsOfType(pyFile, PyElement.class)) {
+            if (element.getNode() == null || element.getNode().getPsi() == null) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 

@@ -67,7 +67,10 @@ public class RealAIClient implements AIClient {
                     .build();
 
             try (Response response = httpClient.newCall(request).execute()) {
-
+                if (response.code() == 401) {
+                    logger.severe("Invalid API key.");
+                    return "Invalid API key. Please verify your configuration";
+                }
                 if (!response.isSuccessful()) {
 
                     logger.severe("AI API call failed with response code: " + response.code());
@@ -88,7 +91,7 @@ public class RealAIClient implements AIClient {
                 return completion.choices.get(0).message.content.trim();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warning("Failed to connect to API: " + e.getMessage());
             return null;
         }
 
