@@ -21,23 +21,36 @@ public class PluginLineMarkerProvider implements LineMarkerProvider{
 
     @Override
     public @Nullable LineMarkerInfo<PsiElement> getLineMarkerInfo(@NotNull PsiElement element) {
-        System.out.println("Inspecting element: {}" +  element.getText());
-
-        if (element instanceof PyClass || element instanceof PyFunction) {
-            System.out.println("Element eligible for LineMarker: " + element.getText());
-
-            return new LineMarkerInfo<>(
-                    element,
-                    element.getTextRange(),
-                    GUTTER_ICON,
-                    psiElement -> "Generate Tests",
-                    (e, elt) -> triggerGenerateTests(elt),
-                    GutterIconRenderer.Alignment.LEFT,
-                    () -> "Generate Tests"
-            );
+        if (element instanceof PyFunction) {
+            PsiElement functionName = ((PyFunction) element).getNameIdentifier();
+            if (functionName != null) {
+                return new LineMarkerInfo<>(
+                        functionName,
+                        functionName.getTextRange(),
+                        GUTTER_ICON,
+                        psiElement -> "Generate Tests for " + ((PyFunction) element).getName(),
+                        (e, elt) -> triggerGenerateTests(element),
+                        GutterIconRenderer.Alignment.LEFT,
+                        () -> "Generate Tests"
+                );
+            }
+        } else if (element instanceof PyClass) {
+            PsiElement className = ((PyClass) element).getNameIdentifier();
+            if (className != null) {
+                return new LineMarkerInfo<>(
+                        className,
+                        className.getTextRange(),
+                        GUTTER_ICON,
+                        psiElement -> "Generate Tests for class " + ((PyClass) element).getName(),
+                        (e, elt) -> triggerGenerateTests(element),
+                        GutterIconRenderer.Alignment.LEFT,
+                        () -> "Generate Tests"
+                );
+            }
         }
         return null;
     }
+
 
     private void triggerGenerateTests(PsiElement element) {
         ApplicationManager.getApplication().invokeLater(() -> {
