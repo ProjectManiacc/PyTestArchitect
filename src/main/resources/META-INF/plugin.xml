@@ -13,7 +13,7 @@
                 class="com.pytestarchitect.GenerateTestAction"
                 text="Generate Test"
                 icon="/icons/magicResolveDark.svg">
-            <keyboard-shortcut first-keystroke="ctrl shift alt A" keymap="Default"/>
+            <keyboard-shortcut first-keystroke="ctrl shift alt A" keymap="$default"/>
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
     </actions>
