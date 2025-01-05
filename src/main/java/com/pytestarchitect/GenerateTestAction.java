@@ -56,7 +56,7 @@ public class GenerateTestAction extends AnAction {
                     indicator.setIndeterminate(true);
                     indicator.setText("Connecting with API to generate tests...");
 
-                    String augmentedSourceCode = createAugmentedSourceCode(testContext.sourceCode, testContext.importPath);
+                    String augmentedSourceCode = createAugmentedSourceCode(testContext.sourceCode, testContext.importPath, testContext.name);
                     String testCode = testGenerationService.generateTests(augmentedSourceCode);
 
                     if (testCode == null || testCode.isEmpty()) {
@@ -159,8 +159,8 @@ public class GenerateTestAction extends AnAction {
     }
 
 
-    private String createAugmentedSourceCode(String sourceCode, String importPath) {
-        return "# Import path: from " + importPath + " import *\n" + sourceCode;
+    private String createAugmentedSourceCode(String sourceCode, String importPath, String name) {
+        return "# Import path: from " + importPath + " import " + name + "\n" + sourceCode;
     }
 
 
