@@ -217,11 +217,33 @@ public class GenerateTestAction extends AnAction {
 
 
     private String getRelativeImportPath(Project project, VirtualFile file) {
-        VirtualFile baseDir = LocalFileSystem.getInstance().findFileByPath(Objects.requireNonNull(project.getBasePath()));
-        if (baseDir == null) return null;
+        if (file == null || project == null) {
+            log.warn("File or project is null.");
+            return null;
+        }
+
+        String projectBasePath = project.getBasePath();
+        if (projectBasePath == null) {
+            log.warn("Project base path is null.");
+            return null;
+        }
+
+        log.info("Project base path: " + projectBasePath);
+        log.info("File path: " + file.getPath());
+
+        VirtualFile baseDir = LocalFileSystem.getInstance().findFileByPath(projectBasePath);
+        if (baseDir == null) {
+            log.warn("Base directory not found for path: " + projectBasePath);
+            return null;
+        }
 
         String relativePath = VfsUtil.getRelativePath(file, baseDir, '/');
-        if (relativePath == null) return null;
+        if (relativePath == null) {
+            log.warn("Could not determine relative path for file: " + file.getPath());
+            return null;
+        }
+
+        log.info("Relative path: " + relativePath);
 
         return relativePath.replaceAll("\\.py$", "").replace('/', '.');
     }
