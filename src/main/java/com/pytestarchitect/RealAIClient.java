@@ -46,7 +46,7 @@ public class RealAIClient implements AIClient {
         return null;
     }
 
-    private Map<String, Object> createRequestBody(String sourceCode) {
+    Map<String, Object> createRequestBody(String sourceCode) {
         List<Map<String, String>> messages = new ArrayList<>();
         messages.add(Map.of(
                 "role", "system",
@@ -71,26 +71,26 @@ public class RealAIClient implements AIClient {
         );
     }
 
-    private String serializeRequest(Map<String, Object> requestBody) {
+    String serializeRequest(Map<String, Object> requestBody) {
         String jsonRequest = gson.toJson(requestBody);
         log.info("Generated JSON Request: {}", jsonRequest);
         return jsonRequest;
     }
 
-    private Request buildHttpRequest(String jsonRequest) {
+    Request buildHttpRequest(String jsonRequest) {
         return new Request.Builder()
-                .url(API_URL)
+                .url(getApiUrl())
                 .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
                 .post(RequestBody.create(jsonRequest, MediaType.parse("application/json")))
                 .build();
     }
 
-    private Response executeRequest(Request request) throws IOException {
+    Response executeRequest(Request request) throws IOException {
         return httpClient.newCall(request).execute();
     }
 
-    private void validateResponse(Response response) throws IOException {
+    void validateResponse(Response response) throws IOException {
         if (response.code() == 401) {
             log.error("Invalid API key.");
             throw new IllegalArgumentException("Invalid API key. Please verify your configuration.");
@@ -101,7 +101,7 @@ public class RealAIClient implements AIClient {
         }
     }
 
-    private String extractResponseBody(Response response) throws IOException {
+    String extractResponseBody(Response response) throws IOException {
         if (response.body() == null) {
             log.error("Response body is null.");
             throw new IOException("Empty response body received from the API.");
@@ -111,7 +111,7 @@ public class RealAIClient implements AIClient {
         return responseBody;
     }
 
-    private String parseResponse(String responseBody) throws IOException {
+    String parseResponse(String responseBody) throws IOException {
         ChatCompletionResponse completion = gson.fromJson(responseBody, ChatCompletionResponse.class);
 
         if (completion.choices == null || completion.choices.isEmpty()) {
