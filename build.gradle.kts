@@ -134,9 +134,8 @@ tasks {
     publishPlugin {
         dependsOn(patchChangelog)
     }
-    runIde {
-        jvmArgs("-Djava.security.manager=allow")
-    }
+
+
 }
 
 intellijPlatformTesting {
