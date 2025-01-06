@@ -12,6 +12,7 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.*;
@@ -30,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Objects;
 
 public class GenerateTestAction extends AnAction {
 
@@ -177,7 +179,7 @@ public class GenerateTestAction extends AnAction {
 
 
     private static VirtualFile createTestsDirectory(Project project) throws IOException {
-        VirtualFile baseDir = project.getBaseDir();
+        VirtualFile baseDir = LocalFileSystem.getInstance().findFileByPath(Objects.requireNonNull(project.getBasePath()));
         if (baseDir == null) throw new IOException("Project base directory not found.");
 
         return WriteAction.compute(() -> {
@@ -211,7 +213,7 @@ public class GenerateTestAction extends AnAction {
 
 
     private String getRelativeImportPath(Project project, VirtualFile file) {
-        VirtualFile baseDir = project.getBaseDir();
+        VirtualFile baseDir = LocalFileSystem.getInstance().findFileByPath(Objects.requireNonNull(project.getBasePath()));
         if (baseDir == null) return null;
 
         String relativePath = VfsUtil.getRelativePath(file, baseDir, '/');

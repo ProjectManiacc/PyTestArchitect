@@ -7,7 +7,9 @@ import com.intellij.idea.IdeaLogger;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.markup.GutterIconRenderer;
+import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.psi.PsiElement;
@@ -54,15 +56,18 @@ public class PluginLineMarkerProvider implements LineMarkerProvider{
             log.warn("Generate Test action not found.");
             return;
         }
+        Editor editor = FileEditorManager.getInstance(project).getSelectedTextEditor();
+        if (editor == null) {
+            log.warn("Editor not found.");
+            return;
+        }
+        DataContext dataContext = SimpleDataContext.builder()
+                .add(CommonDataKeys.PSI_ELEMENT, element)
+                .build();
 
-        DataContext dataContext = SimpleDataContext.getSimpleContext(CommonDataKeys.PSI_ELEMENT.getName(), element, DataManager.getInstance().getDataContext());
-        AnActionEvent actionEvent = AnActionEvent.createFromDataContext(
-                ActionPlaces.UNKNOWN,
-                null,
-                dataContext
-        );
+        ActionManager.getInstance().tryToExecute(
+                action, null, null, ActionPlaces.UNKNOWN, false);
 
-        action.actionPerformed(actionEvent);
     }
 
     @Override
