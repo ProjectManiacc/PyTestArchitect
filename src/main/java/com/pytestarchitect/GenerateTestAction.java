@@ -42,6 +42,9 @@ public class GenerateTestAction extends AnAction {
         testGenerationService = service;
     }
 
+    public static TestGenerationService getTestGenerationService() {
+        return testGenerationService;
+    }
     @Override
     public void actionPerformed(@NotNull AnActionEvent event) {
         Project project = event.getProject();
@@ -206,6 +209,7 @@ public class GenerateTestAction extends AnAction {
 
 
     private static void notifyUser(Project project, String message, NotificationType type) {
+        TestState.setLastNotification(message);
         Notifications.Bus.notify(
                 new Notification("Test Generation", "Test Generation", message, type), project
         );
