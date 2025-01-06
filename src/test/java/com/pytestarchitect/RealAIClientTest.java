@@ -160,6 +160,6 @@ public class RealAIClientTest {
 
         Request request = realAIClient.buildHttpRequest("{}");
         Response response = realAIClient.executeRequest(request);
-        realAIClient.parseResponse(response.body().string()); // Should throw IOException
+        realAIClient.parseResponse(response.body().string());
     }
 }
