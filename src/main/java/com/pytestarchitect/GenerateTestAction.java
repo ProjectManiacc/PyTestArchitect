@@ -23,9 +23,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.intellij.psi.PsiElement;
-import com.jetbrains.python.psi.PyFile;
-import com.jetbrains.python.psi.PyElement;
-import com.intellij.psi.util.PsiTreeUtil;
 
 import java.io.File;
 import java.io.IOException;

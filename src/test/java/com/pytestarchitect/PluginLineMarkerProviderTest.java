@@ -1,21 +1,15 @@
 package com.pytestarchitect;
 
 import com.intellij.codeInsight.daemon.LineMarkerInfo;
-import com.intellij.lang.injection.InjectedLanguageManager;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import com.jetbrains.python.psi.PyClass;
-import com.jetbrains.python.psi.PyFunction;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.MockedStatic;
 
-import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -48,7 +42,7 @@ public class PluginLineMarkerProviderTest {
 
     @Test
     public void testGetLineMarkerInfo_UnsupportedElement() {
-        when(mockElement.getContainingFile()).thenReturn(mock(PsiFile.class)); // Ensure containingFile is not null
+        when(mockElement.getContainingFile()).thenReturn(mock(PsiFile.class));
 
         LineMarkerInfo<PsiElement> markerInfo = provider.getLineMarkerInfo(mockElement);
 

@@ -3,7 +3,7 @@
     <id>com.pytestarchitect</id>
     <name>PyTestArchitect</name>
     <vendor email="piotrkluziok@gmail.com">Piotr Kluziok</vendor>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
     <description><![CDATA[
         PyTestArchitect is a plugin for PyCharm that helps you create and manage tests for your project.
     ]]></description>
