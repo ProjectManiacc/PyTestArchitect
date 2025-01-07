@@ -85,7 +85,7 @@ public class GenerateTestAction extends AnAction {
         });
     }
 
-    private TestContext getTestContext(@NotNull AnActionEvent event, Project project) {
+    TestContext getTestContext(@NotNull AnActionEvent event, Project project) {
         var editor = event.getData(CommonDataKeys.EDITOR);
         if (editor == null) return null;
 
@@ -139,7 +139,7 @@ public class GenerateTestAction extends AnAction {
         return new TestContext(name, sourceCode, importPath);
     }
 
-    private boolean isValidSyntax(String code) {
+    boolean isValidSyntax(String code) {
         try {
 
             File tempFile = File.createTempFile("temp", ".py");
@@ -161,12 +161,12 @@ public class GenerateTestAction extends AnAction {
     }
 
 
-    private String createAugmentedSourceCode(TestContext testContext) {
+    String createAugmentedSourceCode(TestContext testContext) {
         return "# Import path: from " + testContext.importPath + " import " + testContext.name + "\n" + testContext.sourceCode;
     }
 
 
-    private static void saveGeneratedTests(Project project, String testName, String testCode) {
+    static void saveGeneratedTests(Project project, String testName, String testCode) {
         ApplicationManager.getApplication().invokeLater(() -> {
             try {
                 VirtualFile testsDir = createTestsDirectory(project);
@@ -216,7 +216,7 @@ public class GenerateTestAction extends AnAction {
     }
 
 
-    private String getRelativeImportPath(Project project, VirtualFile file) {
+    String getRelativeImportPath(Project project, VirtualFile file) {
         if (file == null || project == null) {
             log.warn("File or project is null.");
             return null;
@@ -276,7 +276,7 @@ public class GenerateTestAction extends AnAction {
     }
 
 
-    private static class TestContext {
+    static class TestContext {
         final String name;
         final String sourceCode;
         final String importPath;
