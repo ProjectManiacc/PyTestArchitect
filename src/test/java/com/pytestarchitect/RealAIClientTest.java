@@ -132,17 +132,17 @@ public class RealAIClientTest {
     @Test
     public void testParseResponse() throws IOException {
         String responseBody = """
-        {
-            "choices": [
                 {
-                    "message": {
-                        "role": "assistant",
-                        "content": "def test_example():\\n    assert True"
-                    }
+                    "choices": [
+                        {
+                            "message": {
+                                "role": "assistant",
+                                "content": "def test_example():\\n    assert True"
+                            }
+                        }
+                    ]
                 }
-            ]
-        }
-        """;
+                """;
         mockWebServer.enqueue(new MockResponse().setBody(responseBody).setResponseCode(200));
 
         Request request = realAIClient.buildHttpRequest("{}");

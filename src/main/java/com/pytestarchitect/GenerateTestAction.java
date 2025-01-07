@@ -42,6 +42,7 @@ public class GenerateTestAction extends AnAction {
     public static TestGenerationService getTestGenerationService() {
         return testGenerationService;
     }
+
     @Override
     public void actionPerformed(@NotNull AnActionEvent event) {
         Project project = event.getProject();

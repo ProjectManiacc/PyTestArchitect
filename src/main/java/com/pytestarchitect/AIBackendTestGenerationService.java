@@ -26,7 +26,7 @@ public class AIBackendTestGenerationService implements TestGenerationService {
             throw e;
         } catch (Exception e) {
             logger.severe("Failed to generate tests: " + e.getMessage());
-            throw new RuntimeException("Unable to connect to API. Check your network connection.", e); 
+            throw new RuntimeException("Unable to connect to API. Check your network connection.", e);
         }
     }
 }
