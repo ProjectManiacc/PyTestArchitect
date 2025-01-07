@@ -24,7 +24,7 @@ import java.util.List;
 public class PluginLineMarkerProvider implements LineMarkerProvider {
 
     private static final Logger log = LoggerFactory.getLogger(PluginLineMarkerProvider.class);
-    private static final Icon GUTTER_ICON = IconLoader.getIcon("/icons/magicResolveDark.svg", PluginLineMarkerProvider.class);
+    protected static final Icon GUTTER_ICON = IconLoader.getIcon("/icons/magicResolveDark.svg", PluginLineMarkerProvider.class);
 
     @Override
     public @Nullable LineMarkerInfo<PsiElement> getLineMarkerInfo(@NotNull PsiElement element) {
@@ -43,7 +43,7 @@ public class PluginLineMarkerProvider implements LineMarkerProvider {
         return element instanceof PyClass || element instanceof PyFunction;
     }
 
-    private LineMarkerInfo<PsiElement> createLineMarkerInfo(PsiElement element) {
+    LineMarkerInfo<PsiElement> createLineMarkerInfo(PsiElement element) {
         return new LineMarkerInfo<>(
                 element,
                 element.getTextRange(),
@@ -55,7 +55,7 @@ public class PluginLineMarkerProvider implements LineMarkerProvider {
         );
     }
 
-    private void triggerGenerateTests(PsiElement element) {
+    void triggerGenerateTests(PsiElement element) {
         try {
             Project project = getProjectFromElement(element);
             AnAction action = getGenerateTestAction();
